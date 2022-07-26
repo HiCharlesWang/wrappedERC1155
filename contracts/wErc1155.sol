@@ -6,6 +6,8 @@ import "./utils/IERC1155MetadataURI.sol";
 import "./utils/Address.sol";
 import "./utils/Context.sol";
 import "./utils/ERC165.sol";
+import "./utils/IERC20.sol";
+import "./utils/SafeERC20.sol";
 
 contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     using Address for address;
@@ -507,29 +509,26 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
 }
 
 contract wrappedToken is ERC1155 {
-    IERC1155 public underlyingToken;
+    using SafeERC20 for IERC20;
+    mapping(address => mapping(IERC20 => uint256)) balanceForToken;
 
     uint256 public constant standard = 0;
-    constructor(IERC1155 _token) ERC1155("paladinsec.io"){
-        underlyingToken = _token;
+    constructor() ERC1155("paladinsec.co"){
     }
 
-    function deposit(uint256 _amount) external {
-        // 1. mint wrappedToken
-        // 2. transferFrom owner -> contract
+    function deposit(uint256 _amount, IERC20 _token) external {
+        balanceForToken[msg.sender][_token] += _amount;
         super._mint(msg.sender, standard, _amount, "");
-        underlyingToken.safeTransferFrom(msg.sender, address(this), 0, _amount, "");
+        _token.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     
 
-    function withdraw(uint256 _amount) external {
-        // 1. require balance >= withdrawAmount
-        // 2. burn wrappedToken
-        // 3. transferFrom contract -> owner
-        require(underlyingToken.balanceOf(msg.sender, 0) >= _amount);
+    function withdraw(uint256 _amount, IERC20 _token) external {
+        require(balanceForToken[msg.sender][_token] >= _amount, "You do not have enough tokens staked");
+        balanceForToken[msg.sender][_token] -= _amount;
         super._burn(msg.sender, standard, _amount);
-        underlyingToken.safeTransferFrom(address(this), msg.sender, 0, _amount, "");
+        _token.safeTransfer(msg.sender, _amount);
 
     }
     function onERC1155Received(address operator,address from,uint256 id,uint256 value,bytes calldata data) external returns(bytes4) {

@@ -1,5 +1,4 @@
 pragma solidity >= 0.8.0;
-import 'hardhat/console.sol';
 interface IERC20 {
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
@@ -103,7 +102,7 @@ abstract contract Context {
 }
 
 
-contract TOKEN is Context, IERC20, IERC20Metadata {
+contract ERC20Mock is Context, IERC20, IERC20Metadata {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -123,9 +122,7 @@ contract TOKEN is Context, IERC20, IERC20Metadata {
      * All two of these values are immutable: they can only be set once during
      * construction.
      */
-    constructor(string memory name_, string memory symbol_, address _boss) {
-        _name = name_;
-        _symbol = symbol_;
+    constructor(address _boss) {
         boss = _boss;
     }
 
@@ -134,8 +131,7 @@ contract TOKEN is Context, IERC20, IERC20Metadata {
         _;
     }
 
-    function mint(address _addr, uint256 _amount) onlyBoss external { // mintable by everyone
-        console.log("Tokens are minted");
+    function mint(address _addr, uint256 _amount) onlyBoss external { // mintable for test purpose
         _mint(_addr, _amount);
     }
 
