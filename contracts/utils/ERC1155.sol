@@ -1,11 +1,10 @@
-pragma solidity >= 0.8.0;
 
-import "./utils/IERC1155.sol";
-import "./utils/IERC1155Receiver.sol";
-import "./utils/IERC1155MetadataURI.sol";
-import "./utils/Address.sol";
-import "./utils/Context.sol";
-import "./utils/ERC165.sol";
+import "./ERC165.sol";
+import "./Context.sol";
+import "./IERC1155.sol";
+import "./IERC1155MetadataURI.sol";
+import "./Address.sol";
+import "./IERC1155Receiver.sol";
 
 contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     using Address for address;
