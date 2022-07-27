@@ -14,6 +14,8 @@ describe("Token contract", () =>{
         mockFactory2 = await ethers.getContractFactory('ERC20Mock');
         mockDeployed2 = await mockFactory.deploy(owner.address);
         await mockDeployed2.mint(owner.address, 500);
+        wrappedTokenHashFactory = await ethers.getContractFactory('wrappedTokenHash');
+        wrappedTokenHashDeployed = await wrappedTokenHashFactory.deploy();
     });
 
     describe("deployment", () =>{
@@ -46,7 +48,6 @@ describe("Token contract", () =>{
             expect(await erc1155Deployed.balanceOf(owner.address, erc1155Deployed.counterForToken(mockDeployed.address))).to.equal(0);
             expect(await mockDeployed.balanceOf(owner.address)).to.equal(500);
             expect(await mockDeployed.balanceOf(erc1155Deployed.address)).to.equal(0);
-        }) 
         })
         it("Deploy another mock and try to withdraw with the first mock", async() =>{
             await mockDeployed.approve(erc1155Deployed.address, 200);
@@ -56,4 +57,39 @@ describe("Token contract", () =>{
             expect(await erc1155Deployed.balanceOf(owner.address, erc1155Deployed.counterForToken(mockDeployed.address))).to.equal(200);
             await expect(erc1155Deployed.withdraw(100, mockDeployed2.address)).to.be.revertedWith("You do not have enough tokens staked")
         })
+    })
+    // NEW VERSION
+    describe("Hash contract tests", () =>{
+        it("Deposit should adjust all necessary balances ", async() =>{
+            await mockDeployed.approve(wrappedTokenHashDeployed.address, 20000);
+            await wrappedTokenHashDeployed.deposit(200, mockDeployed.address);
+            expect(await mockDeployed.balanceOf(wrappedTokenHashDeployed.address)).to.equal(200);
+            expect(await mockDeployed.balanceOf(owner.address)).to.equal(500-200);
+            expect(await wrappedTokenHashDeployed.balanceOf(owner.address, wrappedTokenHashDeployed.tokenHash(mockDeployed.address))).to.equal(200)
+        })
+        it("Should revert withdraw for other tokens", async() =>{
+            await mockDeployed.approve(wrappedTokenHashDeployed.address, 20000);
+            await wrappedTokenHashDeployed.deposit(200, mockDeployed.address);
+            expect(await mockDeployed.balanceOf(wrappedTokenHashDeployed.address)).to.equal(200);
+            expect(await mockDeployed.balanceOf(owner.address)).to.equal(500-200);
+            expect(await wrappedTokenHashDeployed.balanceOf(owner.address, wrappedTokenHashDeployed.tokenHash(mockDeployed.address))).to.equal(200)
+            await expect(wrappedTokenHashDeployed.withdraw(200, mockDeployed2.address)).to.be.revertedWith("This token was not registered yet")
+        })
+        it("Withdraw should adjust all necessary balances", async()=>{
+            await mockDeployed.approve(wrappedTokenHashDeployed.address, 20000);
+            await wrappedTokenHashDeployed.deposit(200, mockDeployed.address);
+            expect(await mockDeployed.balanceOf(wrappedTokenHashDeployed.address)).to.equal(200);
+            expect(await mockDeployed.balanceOf(owner.address)).to.equal(500-200);
+            expect(await wrappedTokenHashDeployed.balanceOf(owner.address, wrappedTokenHashDeployed.tokenHash(mockDeployed.address))).to.equal(200)
+            await wrappedTokenHashDeployed.withdraw(200, mockDeployed.address);
+            expect(await mockDeployed.balanceOf(wrappedTokenHashDeployed.address)).to.equal(0);
+            expect(await mockDeployed.balanceOf(owner.address)).to.equal(500);
+            expect(await wrappedTokenHashDeployed.balanceOf(owner.address, wrappedTokenHashDeployed.tokenHash(mockDeployed.address))).to.equal(0)
+        })
+        it("Should set correct balanceOfToken", async() =>{
+            await mockDeployed.approve(wrappedTokenHashDeployed.address, 20000);
+            await wrappedTokenHashDeployed.deposit(200, mockDeployed.address);  
+            expect(await wrappedTokenHashDeployed.balanceOfToken(owner.address, mockDeployed.address)).to.equal(200);
+        })
+    })
 })
